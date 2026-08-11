@@ -61,30 +61,19 @@
     </div>
 
     <script>
-        // ★ここをあなたのPCで実行中のngrokのURLに変更してください（末尾のスラッシュは不要）
-        const NGROK_URL = "https://stupified-unennobled-cuc.ngrok-free.dev"; 
-
-        let currentUserId = "";
-
-        // 画面読み込み時にLIFFを初期化してユーザーIDを取得
+        // 画面読み込み時にLIFFを初期化
         window.addEventListener('DOMContentLoaded', async () => {
             try {
-                // ご自身のLIFF IDを設定
                 await liff.init({ liffId: "2011069818-MqlqxNyM" });
-                
                 if (!liff.isLoggedIn()) {
                     liff.login();
-                } else {
-                    const profile = await liff.getProfile();
-                    currentUserId = profile.userId;
-                    console.log("User ID successfully loaded:", currentUserId);
                 }
             } catch (error) {
                 console.error("LIFF Initialization failed: ", error);
             }
         });
 
-        // 年齢送信処理
+        // 年齢送信処理（トーク画面へメッセージ送信）
         window.submitAge = async function() {
             const ageInput = document.getElementById('ageInput').value;
             const resultElement = document.getElementById('result');
@@ -94,50 +83,33 @@
                 return;
             }
 
-            if (!currentUserId) {
-                alert('ユーザーIDが取得できていません。LINEアプリ内から開いているか確認してください。');
+            // LINEアプリ内から開かれているかチェック
+            if (!liff.isInClient()) {
+                alert('この操作はLINEアプリ内で行ってください。');
                 return;
             }
 
             try {
                 resultElement.innerText = '送信中...';
 
-                // Render（ブラウザ）から PC上のPython（ngrok）へリクエストを送信
-                const response = await fetch(`${NGROK_URL}/api/register_age`, {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                        'ngrok-skip-browser-warning': 'true'
-                    },
-                    body: JSON.stringify({ 
-                        user_id: currentUserId, 
-                        age: parseInt(ageInput) 
-                    })
-                });
+                // LIFFからBot宛のトーク画面にメッセージを直接送る
+                await liff.sendMessages([
+                    {
+                        type: 'text',
+                        text: `年齢登録:${ageInput}`
+                    }
+                ]);
 
-                const responseText = await response.text();
-                let result;
-                try {
-                    result = JSON.parse(responseText);
-                } catch (e) {
-                    console.error("Server response was not JSON:", responseText);
-                    alert("PC側のPythonプログラムから正しく応答が返されませんでした。");
-                    resultElement.innerText = '';
-                    return;
-                }
+                resultElement.innerText = '送信が完了しました！';
+                
+                // 1秒後にLIFFフォーム画面を閉じる
+                setTimeout(() => { 
+                    liff.closeWindow(); 
+                }, 1000);
 
-                if (response.ok) {
-                    resultElement.innerText = '登録完了しました！トーク画面に戻ります...';
-                    setTimeout(() => { 
-                        liff.closeWindow(); // 1.5秒後に自動でフォームを閉じる
-                    }, 1500);
-                } else {
-                    alert('エラーが発生しました: ' + (result.message || '不明なエラー'));
-                    resultElement.innerText = '';
-                }
             } catch (error) {
-                console.error("Fetch error:", error);
-                alert('PC（ngrok）への通信に失敗しました。Pythonとngrokが起動しているか確認してください。');
+                console.error("Error sending message: ", error);
+                alert('メッセージの送信に失敗しました。');
                 resultElement.innerText = '';
             }
         }
