@@ -27,78 +27,63 @@
     <script>
         let currentUserId = "";
 
-        // ページが読み込まれたときにLIFFを初期化
-        window.onload = async function() {
+        // ページ読み込み時にLIFFを初期化 (async関数内でawaitを使用)
+        window.addEventListener('DOMContentLoaded', async () => {
             try {
-                // ご自身のLIFF IDに書き換えてください（または自動取得）
                 await liff.init({ liffId: "2011069818-MqlqxNyM" });
                 
                 if (!liff.isLoggedIn()) {
                     liff.login();
                 } else {
                     const profile = await liff.getProfile();
-                    currentUserId = profile.userId; // LINEのユーザーIDを自動取得
+                    currentUserId = profile.userId;
+                    console.log("User ID initialized:", currentUserId);
                 }
             } catch (error) {
-                console.log("LIFF Initialization failed: " + error);
+                console.error("LIFF Initialization failed: ", error);
             }
-        };
-
-        async function submitAge() {
-    const age = document.getElementById('ageInput').value;
-
-    if (!age) {
-        alert('年齢を入力してください。');
-        return;
-    }
-
-    if (!currentUserId) {
-        alert('ユーザーIDが取得できていません。LINEアプリ内から開き直してください。');
-        return;
-    }
-
-    try {
-        const response = await fetch('/api/register_age', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ user_id: currentUserId, age: parseInt(age) })
         });
 
-        // レスポンスのテキストを一度文字列として取得（中身を確認するため）
-        const responseText = await response.text();
-        let result;
-        try {
-            result = JSON.parse(responseText);
-        } catch (e) {
-            console.error("Server response was not JSON:", responseText);
-            alert("サーバーから不正な応答が返されました。コンソールを確認してください。");
-            return;
-        }
+        // グローバルスコープに関数を定義（これで "submitAge is not defined" を防ぎます）
+        window.submitAge = async function() {
+            const ageInput = document.getElementById('ageInput').value;
 
-        if (response.ok) {
-            document.getElementById('result').innerText = '登録完了しました！トーク画面に戻ってください。';
-            setTimeout(() => { liff.closeWindow(); }, 2000);
-        } else {
-            alert('エラーが発生しました: ' + (result.message || '不明なエラー'));
-        }
-    } catch (error) {
-        console.error("Fetch error:", error);
-        alert('通信に失敗しました。');
-    }
-}
+            if (!ageInput) {
+                alert('年齢を入力してください。');
+                return;
+            }
 
-            const response = await fetch('/api/register_age', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ user_id: currentUserId, age: parseInt(age) })
-            });
+            if (!currentUserId) {
+                alert('ユーザーIDが取得できていません。LINEアプリ内から開き直してください。');
+                return;
+            }
 
-            const result = await response.json();
-            if (response.ok) {
-                document.getElementById('result').innerText = '登録完了しました！トーク画面に戻ってください。';
-                setTimeout(() => { liff.closeWindow(); }, 2000); // 2秒後に自動で画面を閉じる
-            } else {
-                alert('エラーが発生しました: ' + result.message);
+            try {
+                const response = await fetch('/api/register_age', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ user_id: currentUserId, age: parseInt(ageInput) })
+                });
+
+                const responseText = await response.text();
+                let result;
+                try {
+                    result = JSON.parse(responseText);
+                } catch (e) {
+                    console.error("Server response was not JSON:", responseText);
+                    alert("サーバーから予期せぬ応答が返されました。");
+                    return;
+                }
+
+                if (response.ok) {
+                    document.getElementById('result').innerText = '登録完了しました！トーク画面に戻ってください。';
+                    setTimeout(() => { liff.closeWindow(); }, 2000);
+                } else {
+                    alert('エラーが発生しました: ' + (result.message || '不明なエラー'));
+                }
+            } catch (error) {
+                console.error("Fetch error:", error);
+                alert('通信に失敗しました。');
             }
         }
     </script>
