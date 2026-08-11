@@ -105,7 +105,10 @@
                 // Render（ブラウザ）から PC上のPython（ngrok）へリクエストを送信
                 const response = await fetch(`${NGROK_URL}/api/register_age`, {
                     method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'ngrok-skip-browser-warning': 'true'
+                    },
                     body: JSON.stringify({ 
                         user_id: currentUserId, 
                         age: parseInt(ageInput) 
