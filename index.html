@@ -6,10 +6,46 @@
     <title>年齢入力フォーム</title>
     <script src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
     <style>
-        body { font-family: sans-serif; text-align: center; margin-top: 50px; background-color: #f4f4f9; }
-        .box { background: white; padding: 20px; border-radius: 8px; display: inline-block; box-shadow: 0 0 10px rgba(0,0,0,0.1); width: 80%; max-width: 400px; }
-        input, button { padding: 10px; font-size: 16px; margin: 10px 0; width: 80%; }
-        button { background-color: #06C755; color: white; border: none; border-radius: 4px; cursor: pointer; }
+        body { 
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; 
+            text-align: center; 
+            margin-top: 50px; 
+            background-color: #f4f4f9; 
+        }
+        .box { 
+            background: white; 
+            padding: 24px; 
+            border-radius: 12px; 
+            display: inline-block; 
+            box-shadow: 0 4px 12px rgba(0,0,0,0.1); 
+            width: 85%; 
+            max-width: 400px; 
+            box-sizing: border-box;
+        }
+        h2 { margin-top: 0; color: #333; }
+        p { color: #666; font-size: 14px; }
+        input { 
+            padding: 12px; 
+            font-size: 18px; 
+            margin: 15px 0; 
+            width: 70%; 
+            border: 1px solid #ccc; 
+            border-radius: 6px; 
+            text-align: center;
+        }
+        button { 
+            background-color: #06C755; 
+            color: white; 
+            font-size: 16px; 
+            font-weight: bold; 
+            padding: 12px 24px; 
+            border: none; 
+            border-radius: 6px; 
+            cursor: pointer; 
+            width: 80%; 
+        }
+        button:active { background-color: #05b34c; }
+        #result { margin-top: 15px; font-weight: bold; color: #06C755; }
     </style>
 </head>
 <body>
@@ -21,15 +57,19 @@
             <input type="number" id="ageInput" placeholder="例: 20" min="1" max="120"> 歳
         </div>
         <button onclick="submitAge()">送信する</button>
-        <p id="result" style="color: green;"></p>
+        <p id="result"></p>
     </div>
 
     <script>
+        // ★ここをあなたのPCで実行中のngrokのURLに変更してください（末尾のスラッシュは不要）
+        const NGROK_URL = "https://xxxx.ngrok-free.app"; 
+
         let currentUserId = "";
 
-        // ページ読み込み時にLIFFを初期化 (async関数内でawaitを使用)
+        // 画面読み込み時にLIFFを初期化してユーザーIDを取得
         window.addEventListener('DOMContentLoaded', async () => {
             try {
+                // ご自身のLIFF IDを設定
                 await liff.init({ liffId: "2011069818-MqlqxNyM" });
                 
                 if (!liff.isLoggedIn()) {
@@ -37,16 +77,17 @@
                 } else {
                     const profile = await liff.getProfile();
                     currentUserId = profile.userId;
-                    console.log("User ID initialized:", currentUserId);
+                    console.log("User ID successfully loaded:", currentUserId);
                 }
             } catch (error) {
                 console.error("LIFF Initialization failed: ", error);
             }
         });
 
-        // グローバルスコープに関数を定義（これで "submitAge is not defined" を防ぎます）
+        // 年齢送信処理
         window.submitAge = async function() {
             const ageInput = document.getElementById('ageInput').value;
+            const resultElement = document.getElementById('result');
 
             if (!ageInput) {
                 alert('年齢を入力してください。');
@@ -54,15 +95,21 @@
             }
 
             if (!currentUserId) {
-                alert('ユーザーIDが取得できていません。LINEアプリ内から開き直してください。');
+                alert('ユーザーIDが取得できていません。LINEアプリ内から開いているか確認してください。');
                 return;
             }
 
             try {
-                const response = await fetch('/api/register_age', {
+                resultElement.innerText = '送信中...';
+
+                // Render（ブラウザ）から PC上のPython（ngrok）へリクエストを送信
+                const response = await fetch(`${NGROK_URL}/api/register_age`, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ user_id: currentUserId, age: parseInt(ageInput) })
+                    body: JSON.stringify({ 
+                        user_id: currentUserId, 
+                        age: parseInt(ageInput) 
+                    })
                 });
 
                 const responseText = await response.text();
@@ -71,19 +118,24 @@
                     result = JSON.parse(responseText);
                 } catch (e) {
                     console.error("Server response was not JSON:", responseText);
-                    alert("サーバーから予期せぬ応答が返されました。");
+                    alert("PC側のPythonプログラムから正しく応答が返されませんでした。");
+                    resultElement.innerText = '';
                     return;
                 }
 
                 if (response.ok) {
-                    document.getElementById('result').innerText = '登録完了しました！トーク画面に戻ってください。';
-                    setTimeout(() => { liff.closeWindow(); }, 2000);
+                    resultElement.innerText = '登録完了しました！トーク画面に戻ります...';
+                    setTimeout(() => { 
+                        liff.closeWindow(); // 1.5秒後に自動でフォームを閉じる
+                    }, 1500);
                 } else {
                     alert('エラーが発生しました: ' + (result.message || '不明なエラー'));
+                    resultElement.innerText = '';
                 }
             } catch (error) {
                 console.error("Fetch error:", error);
-                alert('通信に失敗しました。');
+                alert('PC（ngrok）への通信に失敗しました。Pythonとngrokが起動しているか確認してください。');
+                resultElement.innerText = '';
             }
         }
     </script>
