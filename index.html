@@ -1,0 +1,53 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>年齢入力フォーム</title>
+    <style>
+        body { font-family: sans-serif; text-align: center; margin-top: 50px; background-color: #f4f4f9; }
+        .box { background: white; padding: 20px; border-radius: 8px; display: inline-block; box-shadow: 0 0 10px rgba(0,0,0,0.1); }
+        input, button { padding: 10px; font-size: 16px; margin: 10px 0; }
+        button { background-color: #06C755; color: white; border: none; border-radius: 4px; cursor: pointer; }
+    </style>
+</head>
+<body>
+    <div class="box">
+        <h2>年齢を教えてください</h2>
+        <p>AIがあなたに合わせた話し方へ調整します！</p>
+        
+        <input type="hidden" id="userId" value="TEST_USER_ID">
+        
+        <div>
+            <input type="number" id="ageInput" placeholder="例: 15" min="1" max="120"> 歳
+        </div>
+        <button onclick="submitAge()">送信する</button>
+        <p id="result" style="color: green;"></p>
+    </div>
+
+    <script>
+        async function submitAge() {
+            const userId = document.getElementById('userId').value;
+            const age = document.getElementById('ageInput').value;
+
+            if (!age) {
+                alert('年齢を入力してください。');
+                return;
+            }
+
+            const response = await fetch('/api/register_age', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ user_id: userId, age: parseInt(age) })
+            });
+
+            const result = await response.json();
+            if (response.ok) {
+                document.getElementById('result').innerText = '登録が完了しました！LINEに戻ってください。';
+            } else {
+                alert('エラーが発生しました: ' + result.message);
+            }
+        }
+    </script>
+</body>
+</html>
