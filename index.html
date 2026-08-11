@@ -45,17 +45,47 @@
         };
 
         async function submitAge() {
-            const age = document.getElementById('ageInput').value;
+    const age = document.getElementById('ageInput').value;
 
-            if (!age) {
-                alert('年齢を入力してください。');
-                return;
-            }
+    if (!age) {
+        alert('年齢を入力してください。');
+        return;
+    }
 
-            if (!currentUserId) {
-                alert('ユーザーIDが取得できていません。LINEアプリ内から開き直してください。');
-                return;
-            }
+    if (!currentUserId) {
+        alert('ユーザーIDが取得できていません。LINEアプリ内から開き直してください。');
+        return;
+    }
+
+    try {
+        const response = await fetch('/api/register_age', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ user_id: currentUserId, age: parseInt(age) })
+        });
+
+        // レスポンスのテキストを一度文字列として取得（中身を確認するため）
+        const responseText = await response.text();
+        let result;
+        try {
+            result = JSON.parse(responseText);
+        } catch (e) {
+            console.error("Server response was not JSON:", responseText);
+            alert("サーバーから不正な応答が返されました。コンソールを確認してください。");
+            return;
+        }
+
+        if (response.ok) {
+            document.getElementById('result').innerText = '登録完了しました！トーク画面に戻ってください。';
+            setTimeout(() => { liff.closeWindow(); }, 2000);
+        } else {
+            alert('エラーが発生しました: ' + (result.message || '不明なエラー'));
+        }
+    } catch (error) {
+        console.error("Fetch error:", error);
+        alert('通信に失敗しました。');
+    }
+}
 
             const response = await fetch('/api/register_age', {
                 method: 'POST',
